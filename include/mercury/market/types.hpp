@@ -8,6 +8,14 @@
 // integer, std::uint64_t -> unsighed 64-bit integer
 #include <cstdint>
 
+#include <string_view>
+
+// why string view? in python, a string is just "Bid" in c++ there are several
+// string related types. A full std::string owns memory and can modify its
+// contents. but "Bid" is just a fixed string literal. we dont need to allocate
+// or copy anything std::string_view is essentially a lightweight read online
+// view over some characters, no heap allocation
+
 // a namespace is a way of organising names in C++ everything here belongs to
 // mercury::market. this prevents generic names such as Price or side from being
 // placed in the global namespace
@@ -45,5 +53,40 @@ using Timestamp = std::uint64_t;
 // rather than relying on strigs, such as "BUY" and "SELL".
 
 enum class Side { Bid, Ask };
+
+// side -> text conversion
+//
+// convert a Side value into human-readable text. Example: to_string(Side::Bid)
+// returns: "Bid"
+//
+// The function returns std::string_view rather than std::string because the
+// returned values are fixed string literals the function is constexpr which
+// means C++ is allowed to evaluate it during compilationn when its input is
+// known at compile time.
+
+constexpr std::string_view to_string(Side side) {
+
+  // switch chooses one branch based on the value of side
+  //
+  // ptyhon eq:
+  // if side == Side.bid
+  // return bid
+  // elif side = side.ask
+  // return ask
+  // in C++, an enumerator is often naturally handled with switch
+  //
+  switch (side) {
+  case Side::Bid:
+    return "Bid";
+
+  case Side::Ask:
+    return "Ask";
+  }
+  // in normal mercury code we should never reach this line because side
+  // currently has only bid and ask we still return something so that the
+  // function has a valid return value for every possible underlying enum
+  // representation
+  return "Unknown";
+}
 
 } // namespace mercury::market

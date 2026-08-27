@@ -32,6 +32,7 @@ int main() {
   using mercury::market::Quantity;
   using mercury::market::Side;
   using mercury::market::Timestamp;
+  using mercury::market::to_string;
 
   // example market values
   //
@@ -149,7 +150,10 @@ int main() {
   // example_side == Side::Bid ? "Bid" : "Ask"
   // later we will replace this with a proper utility function
 
-  std::cout << "Side: " << (example_side == Side::Bid ? "Bid" : "Ask") << '\n';
+  // we will convert side into human readable text using our reusable helper
+  // function
+
+  std::cout << "Side: " << to_string(example_side) << '\n';
 
   std::cout << '\n';
   std::cout << "status: ready\n";
