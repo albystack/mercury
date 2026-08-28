@@ -10,6 +10,9 @@
 
 #include <string_view>
 
+#include <compare>
+// provides the machinery used by modern C++ comparisons
+
 // why string view? in python, a string is just "Bid" in c++ there are several
 // string related types. A full std::string owns memory and can modify its
 // contents. but "Bid" is just a fixed string literal. we dont need to allocate
@@ -64,6 +67,29 @@ public:
   constexpr std::int64_t ticks() const noexcept {
     return ticks_;
   }
+
+  // comparison operators
+  // equality comparison this allows Price a{100} Price b{100}, a==b is True
+  // const Price& other
+  // other is reference to another Price
+  // "&" means we refer to the existing object rather than copying it
+  // "const" means we promise not to modify the object
+  // the second const means the function also promises not to modify the Price
+  // object that the function is being called on
+  //
+  [[nodiscard]]
+  constexpr bool operator==(const Price &other) const noexcept = default;
+
+  // three way comparison operator
+  // this operator <=> is the spaceship operator
+  // by defining it, c++ can provide the normal ordering operations: < <= > >=
+  // based on the ordering of Price's data members
+  //
+  // since price only stores ticks_ this effectively means lower_ticks -> lower
+  // Price, higher ticks_ -> Higher Price = default tells the compiler to
+  // generate the implementation
+  [[nodiscard]]
+  constexpr auto operator<=>(const Price &other) const noexcept = default;
 
 private:
   // intenral representation

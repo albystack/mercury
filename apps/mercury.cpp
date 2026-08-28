@@ -160,9 +160,33 @@ int main() {
 
   std::cout << "Side: " << to_string(example_side) << '\n';
 
-  std::cout << '\n';
-  std::cout << "status: ready\n";
+  // price comparison example
+  //
+  // imagine a market whose tick size is $0.01
+  // these are representative best-bid and best-ask prices
+  constexpr Price example_bid{10'000};
+  constexpr Price example_ask{10'001};
 
-  // exit successufully, returning 0 tells the OS mercury exited successfully
+  // a second price with exactly the same tick value as our bid
+  constexpr Price same_as_bid{10'000};
+
+  // std::boolalpha tells std::cout to display boolean values as true, false
+  // rather than 0,1
+  std::cout << std::boolalpha;
+  std::cout << '\n';
+  std::cout << "Price comparisons:\n";
+
+  // 100.00 < 100.01
+  std::cout << "Bid < ask: " << (example_bid < example_ask) << '\n';
+
+  // Both values contain 10'000 ticks
+  std::cout << "Bid == same bid: " << (example_bid == same_as_bid) << '\n';
+
+  // 100.01 > 100.00
+  std::cout << "Ask > bid: " << (example_ask > example_bid) << '\n';
+
+  std::cout << '\n';
+  std::cout << "Status: ready\n";
+  // exit successfully, returning 0 tells the OS mercury exited successfully
   return 0;
 }
