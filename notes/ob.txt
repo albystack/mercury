@@ -1,0 +1,227 @@
+What is an order book? 
+
+A limit order book is simply a collection of intentions to buy and sell an asset at a specified price. 
+
+Imagine BTC is trading at $100. 
+
+Some traders are willing to buy: 
+
+Price | Quantity
+$100.00 | 4 BTC 
+$99.99 | 7 BTC 
+
+and so on. 
+
+Others are willing to sell: 
+
+SELLERS 
+
+Price | Quantity
+
+$100.01 | 3 BTC 
+$100.02 | 6 BTC 
+$100.3 | 5 BTC 
+
+The best bids are 100.00, the best ask is 100.1. 
+
+Bid = orders wanting to buy 
+Ask = orders wanting to sell 
+
+The best bid the highest price somebody is willing to pay 
+
+Why the highest? if you're selling, youre rather sell to someone offering 100 than 99.98. 
+
+the best ask is the lowest price somebody is currently willing to sell for. 100.01 is better to be sold to than 100.03. 
+
+so the best bid = max(bids)
+the best ask = min(asks)
+
+That is why bid and ask run in opposite directions 
+
+The Spread 
+
+The spread is: spread = best ask - best bid 
+
+Our example: 100.01 - 100.00 = 0.01 
+
+If the instruments tick size is 0.01, this is a 1-tick spread 
+
+MidPrice 
+
+A very simple estimate of the current market price is at the midpoint: 
+
+m = (b+a)/ 2, where b is the best bid, a is the best ask 
+
+here: m = (100.00 + 100.01) / 2 = 100.005
+
+The midpoint does not necessarily correspond to a valid tradable price 
+
+If tick size is $0.01, then 100 is valid, 100.01 is valid, 100.005 is not valid. 
+
+Limit Orders 
+
+Suppose you submit: BUY 2 BTC @ 99.99 
+
+You are saying you're willing to buy 2 btc, but I will pay no more than 99.99 
+
+Nobody will sell to you if the current best ask (the seller) is $100.01. 
+
+Therefore your order rests in the book: 
+ 
+This is called a passive order 
+
+Market orders 
+
+A market order behaves differently
+
+If you say MARKET BUY 2 BTC: You're saying buy immediately from the cheapest available sellers 
+
+The market order is aggressive, because it removes existing liquidity. The resting limit order is passive because it supplies liquidity
+
+Marketable limit orders 
+
+There is also a middle case 
+
+Suppose best ask is at 100.01, you submit BUY 2 @ 100.02.
+
+Even though its a limit order, you're willing to pay up to 100.02. Since somebody is already offering 100.01, it executes immediately against them: it is a marketable limit order. so limit order is not passive (hence not addition of liquidity)
+
+What a price level means 
+
+When we receive L2 market data, we are not interested in every individual order
+
+Instead, we see aggregate volume at each price 
+
+For example: 
+
+Price = 100, total bid quantity = 4.2 
+Price = 99.99, total bid quantity = 11.7,
+Price = 99.98, total bid quantity = 8.1 
+
+There might be ten individual traders sitting there, but L2 aggregates those 
+
+V_100.00 = 4.2 
+
+So mercury's initial order book will map price -> total quantity, not price -> each individual order 
+
+L1 = best bid and best ask only 
+L2 = aggregated quantity at multiple price levels 
+L3 = individual orders and usualyl their identities/sequences 
+
+L1 might show 
+
+Bid: 100.00 x 4 
+Ask: 100.01 x 3 
+
+L2 gives more depth 
+
+Ask 
+100.03 x 5 
+100.02 x 6 
+100.01 x 3 
+
+Bid 
+100.00 x 4 
+99.99 x 7 
+99.98 x 2 
+
+L3 might give 
+
+Order #581 1 BTC 
+Order #716 2 BTC 
+
+etc 
+
+This creates an important limitation model for our future queue model 
+
+Suppose the book says: 
+
+10.000 -> 10 BTC
+
+and then we place: 
+
+BUY 1 BTC @ 100.00 
+
+We might assume 
+
+10 BTC ahead 
+1 BTC ours 
+
+but if later the L2 quantity falls from 
+10 -> 7, we dont know what happened 
+Either 3 BTC were traded, or they were cancelled 
+If cancelled, were they ahead or behind of us? 
+
+L2 cannot fully tell us this. 
+
+This is why mercury's later queue position is an estimate 
+
+
+Price-time priority 
+
+Many central-limit-order-book markets use some form of price-time priority 
+
+The basic idea is: 
+
+1. better price has priority 
+2. at the same price, earlier orders have priority 
+
+Mercury's architecture should be. 
+
+It should know the facts: best bid/ask, quantity at price, spread, depth (of order book). 
+
+the architecture is market data -> order book -> objective market state -> strategy -> trading decision
+
+------
+
+How L2 Updates work conceptually 
+
+Suppose mercury has: 
+
+100.00 -> 4
+99.99 -> 7 
+
+Then an exchange sends an update: Bid 100.00 -> 6
+
+mercury changes 4 -> 6 
+
+if we receive 100.00 -> 0 then we remove this price level. 
+
+so the core operation is update(side, price, quantity)
+
+with quantity > 0 
+then insert level if absent, or replace existing quantity 
+quantity == 0 -> remove level 
+
+Snapshots and incremental updates 
+
+When we first connect to an exchange we need an initial state 
+
+We construct a local book from a number of bids and asks. 
+
+then as update arrives, we update. 
+
+which c++ data structure do we use? 
+
+price -> quantity screams std::map. a std:map keeps keys sorted 
+
+for asks we want lowest price first, for bids we want highest price first, so we get two containers 
+
+the complexity for insert/update/delete is O(logn) 
+accessing the beginning of the map is constant-time
+
+we could chase performance using arrays, flat vectors, and so on, but for later stages 
+
+the invariant 
+
+an invariant is something that should always be true if our state is valid 
+
+quantity at stored level > 0 
+bids correctly ordered 
+asks correctly ordered 
+best bid highest bid 
+best ask lowest ask 
+
+best bid <best ask 
+if best bid >= best ask, the book is crossed. 
+
