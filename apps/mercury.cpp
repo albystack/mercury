@@ -121,8 +121,13 @@ int main() {
   std::cout << "Core market types loaded: \n";
 
   // python: print("price ticks:", example_price)
-
-  std::cout << "Price ticks: " << example_price << '\n';
+  // price is now a class than an integer
+  // std::cout does not yet know how to print a Price object directly
+  // we therefore call example_price.ticks()
+  // which asks the Price object for its underlying integer tick count
+  //  the "." operator accesses a public memebr of an object
+  //
+  std::cout << "Price ticks: " << example_price.ticks() << '\n';
 
   std::cout << "Quantity units: " << example_quantity << '\n';
 

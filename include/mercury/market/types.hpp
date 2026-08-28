@@ -27,7 +27,51 @@ namespace mercury::market {
 // represented as 10'001 ticks using integer ticks avoids floating-point
 // rounding errors in price comparison and order book operations
 
-using Price = std::int64_t;
+// price (new)
+//
+// we had price as std::int64_t, as far as c++ were concerned, they were the
+// same this is dangerous, as mercury contains many different numerical values
+// like price, quantity, timestamp a trading engine should make invalid
+// combinations difficult to express, so now price has its own class
+class Price {
+public:
+  // constructor
+  // a constructor creates a price obkject
+  // python:
+  // class Price:
+  // def __init__(self,ticks);
+  // self.ticks = ticks
+  // in c++ its price(std::int64_t ticks)
+  //
+  // notice a constructor has the same name as the class and does not have a
+  // return type
+  //
+  // "explicit" prevents c++ from silently converting an integer into a price
+  // we want Price price{10'001};
+  // we dont want implicit conversions.
+  // : ticks_{ticks} is a member initialiser list. the parameter ticks is used
+  // to initialise the objects private member ticks_
+  //
+  explicit constexpr Price(std::int64_t ticks) : ticks_{ticks} {}
+
+  // accessor
+  // this function lets other code read the raw number of ticks stored inside
+  // the Price
+  // [[nodiscard]] tells the compiler the return value of this function is
+  // important the const after the function means calling this function will not
+  // modify this price object
+  [[nodiscard]]
+  constexpr std::int64_t ticks() const noexcept {
+    return ticks_;
+  }
+
+private:
+  // intenral representation
+  // this is the actual integer stored inside every Price
+  // it is PRIVATE. code outside price cannot do price.ticks_ = 500
+  // instead, price controls how its intenral state can be accessed
+  std::int64_t ticks_;
+};
 
 // quantities are also represented using integer units
 // we will later define the quantity scale for each instrument
