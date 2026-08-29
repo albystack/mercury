@@ -4,6 +4,8 @@
 #include <map>
 
 #include <mercury/market/types.hpp>
+#include <optional> // returns quantity, or st::nullopt
+#include <stdexcept>
 
 namespace mercury::book {
 
@@ -36,6 +38,51 @@ public:
       return bids_.empty();
     }
     return asks_.empty();
+  }
+
+  // Apply an L2 price-level update.
+  // Positive quantity: insert a new level or replace quantity at existing level
+  // Zero quantity: remove price level
+  // Negative quantities are invalid market state and are rejected
+  void update(market::Side side, market::Price price,
+              market::Quantity quantity) {
+    if (quantity < 0) {
+      throw std::invalid_argument{"Order book quantity cannot be negative"};
+    }
+    if (side == market::Side::Bid) {
+      if (quantity == 0) {
+        bids_.erase(price);
+      } else {
+        bids_.insert_or_assign(price, quantity);
+      }
+      return;
+    }
+    if (quantity == 0) {
+      asks_.erase(price);
+    } else {
+      asks_.insert_or_assign(price, quantity);
+    }
+  }
+  // return the aggregate quantity at a particular price. If it does not exist,
+  // return std::nullopt
+
+  [[nodiscard]]
+  std::optional<market::Quantity> quantity_at(market::Side side,
+                                              market::Price price) const
+
+  {
+    if (side == market::Side::Bid) {
+      const auto iterator = bids_.find(price);
+      if (iterator == bids_.end()) {
+        return std::nullopt;
+      }
+      return iterator->second;
+    }
+    const auto iterator = asks_.find(price);
+    if (iterator == asks_.end()) {
+      return std::nullopt;
+    }
+    return iterator->second;
   }
 
 private:
