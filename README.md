@@ -38,8 +38,3 @@ ctest --test-dir build --output-on-failure
 
 Mercury is under active development, with hopes to finish by beginning of Michaelmas 26. Feedback, discussion, and suggestions for improving the implementation/architecture are always welcome.
 
-
-
-
-```
-
