@@ -85,6 +85,35 @@ public:
     return iterator->second;
   }
 
+  // Return the highest-priced bid currently resting in the book. An empty bid
+  // side has no valid best price, so we return std::nullopt
+
+  [[nodiscard]]
+  std::optional<PriceLevel> best_bid() const {
+    if (bids_.empty()) {
+      return std::nullopt;
+    }
+
+    // bids_ is sorted from highest to lowest price. Therefore, begin() points
+    // directly to the best bid
+    const auto &[price, quantity] = *bids_.begin();
+
+    return PriceLevel{price, quantity};
+  }
+  // Return the lowest-priced ask currently resting in the book
+  [[nodiscard]]
+  std::optional<PriceLevel> best_ask() const {
+    if (asks_.empty()) {
+      return std::nullopt;
+    }
+
+    // asks_is sorted from lowest -> highest price
+    // so begin(), like before, points directly to the best ask
+    const auto &[price, quantity] = *asks_.begin();
+
+    return PriceLevel{price, quantity};
+  }
+
 private:
   // Internal storage
   // Bids must be ordered from HIGHEST TO LOWEST
