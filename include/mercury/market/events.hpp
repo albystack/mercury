@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mercury/market/types.hpp>
+#include <variant>
 
 namespace mercury::market {
 
@@ -49,5 +50,7 @@ struct Trade {
   Price price;
   Quantity quantity;
 };
+
+using MarketEvent = std::variant<BookUpdate, Trade>;
 
 } // namespace mercury::market
