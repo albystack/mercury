@@ -44,3 +44,24 @@ TEST(MarketDataProcessorTest, DoesNotApplyTradeDirectlyToOrderBook) {
   ASSERT_TRUE(quantity.has_value());
   EXPECT_EQ(quantity.value(), 500);
 }
+
+TEST(MarketDataProcessorTest, PreservesBookUpdateSemantics) {
+  OrderBook book;
+  MarketDataProcessor processor{book};
+
+  processor.process(MarketEvent{
+      BookUpdate{Timestamp{1'000'000}, Side::Bid, Price{10'000}, 500}});
+
+  processor.process(MarketEvent{
+      BookUpdate{Timestamp{2'000'000}, Side::Bid, Price{10'000}, 800}});
+
+  const auto replaced_quantity = book.quantity_at(Side::Bid, Price{10'000});
+
+  ASSERT_TRUE(replaced_quantity.has_value());
+  EXPECT_EQ(replaced_quantity.value(), 800);
+
+  processor.process(MarketEvent{
+      BookUpdate{Timestamp{3'000'000}, Side::Bid, Price{10'000}, 0}});
+
+  EXPECT_FALSE(book.quantity_at(Side::Bid, Price{10'000}).has_value());
+}
