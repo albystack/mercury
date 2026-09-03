@@ -71,6 +71,7 @@ add_executable(
   tests/market/types_test.cpp
   tests/book/order_book_test.cpp
   tests/market/events_test.cpp
+  tests/market/market_data_processor_test.cpp
 )
 
 # Our tests need access to Mercury's public headers 
