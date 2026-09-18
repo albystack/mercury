@@ -7,6 +7,9 @@ project(
     LANGUAGES CXX
 )
 
+find_package(Boost REQUIRED COMPONENTS system)
+find_package(OpenSSL REQUIRED)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -41,7 +44,18 @@ target_compile_options(
         -Wshadow
 )
 
+add_executable(
+  mercury_feed_smoke
+  apps/feed_smoke.cpp
+)
 
+target_link_libraries(
+  mercury_feed_smoke
+  PRIVATE
+    Boost::system
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
 # TESTING 
 # FetchContent lets CMake download third-party dependencies as part of the configuration process for the project 
 # This means a developer clonign Mercury need not manually install GoogleTest before building the test suite 
