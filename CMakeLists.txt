@@ -47,6 +47,23 @@ target_compile_options(
 add_executable(
   mercury_feed_smoke
   apps/feed_smoke.cpp
+  src/feed/coinbase_websocket_client.cpp
+)
+
+target_include_directories(
+  mercury_feed_smoke
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_options(
+  mercury_feed_smoke
+  PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wconversion
+    -Wshadow
 )
 
 target_link_libraries(
