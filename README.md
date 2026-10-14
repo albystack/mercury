@@ -120,6 +120,5 @@ ctest --test-dir build/sanitize --output-on-failure
 Benchmark distributions include measurement overhead. Compare the same workload
 and compiler settings on the same machine; they measure local operations.
 
-The [lesson ledger](notes/lessons.md) explains the concepts and verification
-for each step. Protocol sources: [Coinbase level2](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/websocket/level2)
+Protocol sources: [Coinbase level2](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/websocket/level2)
 and [official schemas](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/advanced-trade-asyncapi.json).
