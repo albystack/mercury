@@ -127,3 +127,12 @@ simulated exposure. EOF ends the experiment without inventing liquidation
 trades; residual inventory remains marked. CLI experiments accept latency,
 maker fees, and order units. Golden tests cover deterministic PnL, fee and
 latency sensitivity, loss stops, feed gaps, and absence of lookahead.
+
+## 18B — delayed trade protection
+
+The first server envelope in each connection anchors exchange UTC to captured
+arrival time. A delayed trade cannot consume queue entries introduced after
+its mapped event time. This fixed-offset model does not estimate changing clock
+skew or network jitter. Already cancelled queues are not reconstructed for
+late reports, a conservative source of missed fills. The fixture uses realistic
+progressing event timestamps, and a regression test protects activation timing.

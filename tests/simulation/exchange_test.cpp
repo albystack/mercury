@@ -56,3 +56,12 @@ TEST(SimulatedExchange, ExactPriceSideAndResyncBoundaries) {
   EXPECT_TRUE(exchange.fills().empty());
   exchange.invalidate(24); EXPECT_TRUE(exchange.orders().get(live).terminal());
 }
+
+TEST(SimulatedExchange, DelayedTradeCannotFillOrAdvanceQueueOfNewerOrder) {
+  auto book = make_book(); simulation::SimulatedExchange exchange{book, {10, 5}};
+  const auto id = exchange.submit(market::Side::Bid, market::Price{100}, 5, 0);
+  exchange.advance(10);
+  exchange.on_trade(sell(100), 20, 9);
+  EXPECT_TRUE(exchange.fills().empty()); EXPECT_EQ(exchange.queue_ahead(id), 10);
+  exchange.on_trade(sell(15), 21, 11); EXPECT_EQ(exchange.orders().get(id).filled, 5);
+}

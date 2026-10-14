@@ -40,8 +40,8 @@ TEST(PaperEngine, ActivationUsesBookBeforeNewArrivalNotFutureQuantity) {
   std::ifstream input{std::string{MERCURY_FIXTURE_DIR} + "/sample.jsonl"};
   data::RecordingReader source{input}; const auto snapshot = source.next(); ASSERT_TRUE(snapshot);
   std::stringstream stream; data::RecordingWriter writer{stream, source.instrument()}; writer.write(*snapshot);
-  writer.write({1'100'000'000, false, R"({"channel":"l2_data","sequence_num":1,"timestamp":"2026-10-14T12:00:00Z","events":[{"type":"update","product_id":"BTC-USD","updates":[{"side":"bid","price_level":"100.00","new_quantity":"0.01","event_time":"2026-10-14T12:00:00Z"}]}]})"});
-  writer.write({1'200'000'000, false, R"({"channel":"market_trades","sequence_num":2,"timestamp":"2026-10-14T12:00:00Z","events":[{"type":"update","trades":[{"trade_id":"x","product_id":"BTC-USD","side":"BUY","price":"100.00","size":"0.0015","time":"2026-10-14T12:00:00Z"}]}]})"});
+  writer.write({1'100'000'000, false, R"({"channel":"l2_data","sequence_num":1,"timestamp":"2026-10-14T12:00:00.100Z","events":[{"type":"update","product_id":"BTC-USD","updates":[{"side":"bid","price_level":"100.00","new_quantity":"0.01","event_time":"2026-10-14T12:00:00Z"}]}]})"});
+  writer.write({1'200'000'000, false, R"({"channel":"market_trades","sequence_num":2,"timestamp":"2026-10-14T12:00:00.200Z","events":[{"type":"update","trades":[{"trade_id":"x","product_id":"BTC-USD","side":"BUY","price":"100.00","size":"0.0015","time":"2026-10-14T12:00:00.200Z"}]}]})"});
   data::RecordingReader reader{stream}; feed::FeedSession session;
   simulation::PaperConfig config; config.latency = {50'000'000, 50'000'000};
   simulation::PaperEngine engine{session, reader.instrument(), config};

@@ -19,6 +19,9 @@ public:
       throw std::invalid_argument{"Quote sizes exceed risk configuration"};
   }
   void before(const data::Record& record, const feed::FeedMessage& message, const feed::FeedSession& session) {
+    if (record.new_connection || !received_anchor_) {
+      received_anchor_ = record.received_ns; exchange_anchor_ = message.timestamp;
+    }
     const auto previous = session.last_sequence();
     const bool fresh = !previous || message.sequence > *previous;
     const bool gap = previous && fresh && message.sequence - *previous != 1;
@@ -34,7 +37,7 @@ public:
       exchange_.invalidate(now); bid_.reset(); ask_.reset(); return;
     }
     for (const auto& trade : session.trades()) {
-      exchange_.on_trade(trade, now);
+      exchange_.on_trade(trade, now, trade_clock(trade.timestamp, now));
       while (accounted_fills_ < exchange_.fills().size()) account_.apply(exchange_.fills()[accounted_fills_++]);
       const auto absolute = account_.inventory() < 0 ? -account_.inventory() : account_.inventory();
       max_inventory_ = std::max(max_inventory_, absolute);
@@ -58,6 +61,16 @@ public:
   [[nodiscard]] market::Quantity max_inventory() const noexcept { return max_inventory_; }
   [[nodiscard]] long double equity() const noexcept { return mark_ ? account_.equity(*mark_) : account_.cash(); }
 private:
+  [[nodiscard]] market::Timestamp trade_clock(market::Timestamp exchange_time, market::Timestamp received) const {
+    if (!received_anchor_ || !exchange_anchor_) throw std::logic_error{"Paper engine requires before callback"};
+    market::Timestamp mapped;
+    if (exchange_time >= *exchange_anchor_) mapped = after(*received_anchor_, exchange_time - *exchange_anchor_);
+    else {
+      const auto difference = *exchange_anchor_ - exchange_time;
+      mapped = difference > *received_anchor_ ? 0 : *received_anchor_ - difference;
+    }
+    return std::min(mapped, received);
+  }
   void reconcile(market::Side side, const std::optional<strategy::Quote>& desired,
                  std::optional<execution::OrderId>& active, market::Timestamp now) {
     exchange_.advance(now);
@@ -80,6 +93,7 @@ private:
   strategy::InventoryQuoter quoter_;
   std::optional<execution::OrderId> bid_, ask_;
   std::optional<market::Price> mark_;
+  std::optional<market::Timestamp> received_anchor_, exchange_anchor_;
   std::size_t accounted_fills_{0}, submitted_{0}, cancellations_{0}, risk_rejections_{0};
   market::Quantity max_inventory_{0};
 };

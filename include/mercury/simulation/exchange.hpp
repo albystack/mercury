@@ -33,8 +33,9 @@ public:
       if (orders_.acknowledge_cancel(id, deadline)) remove(id);
     });
   }
-  void on_trade(const market::Trade& trade, market::Timestamp now) {
+  void on_trade(const market::Trade& trade, market::Timestamp now, std::optional<market::Timestamp> occurred_ns = {}) {
     if (trade.price.ticks() <= 0 || trade.quantity <= 0) throw std::invalid_argument{"Invalid simulated trade"};
+    if (occurred_ns && *occurred_ns > now) throw std::invalid_argument{"Trade occurs after observation"};
     advance(now);
     const auto side = trade.aggressor_side == market::AggressorSide::Sell ? market::Side::Bid : market::Side::Ask;
     const auto it = queues_.find({side, trade.price});
@@ -43,6 +44,7 @@ public:
     auto volume = trade.quantity;
     while (volume > 0 && !queue.empty()) {
       auto& entry = queue.front();
+      if (entry.entered_ns > occurred_ns.value_or(now)) break;
       if (entry.id && !orders_.get(*entry.id).executable()) { queue.pop_front(); continue; }
       const auto consumed = std::min(volume, entry.quantity);
       if (entry.id) {
@@ -81,7 +83,7 @@ public:
     return 0;
   }
 private:
-  struct Entry { std::optional<execution::OrderId> id; market::Quantity quantity; };
+  struct Entry { std::optional<execution::OrderId> id; market::Quantity quantity; market::Timestamp entered_ns; };
   void activate(execution::OrderId id, market::Timestamp now) {
     const auto& order = orders_.get(id);
     if (order.terminal()) return;
@@ -95,8 +97,8 @@ private:
     market::Quantity external = 0;
     for (const auto& entry : queue) if (!entry.id) external += entry.quantity;
     const auto displayed = book_.quantity_at(order.side, order.price).value_or(0);
-    if (displayed > external) queue.push_back({std::nullopt, displayed - external});
-    queue.push_back({id, order.remaining()}); orders_.accept(id, now);
+    if (displayed > external) queue.push_back({std::nullopt, displayed - external, now});
+    queue.push_back({id, order.remaining(), now}); orders_.accept(id, now);
   }
   void remove(execution::OrderId id) {
     const auto& order = orders_.get(id);
