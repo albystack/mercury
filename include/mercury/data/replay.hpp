@@ -11,14 +11,15 @@ struct ReplayStats {
   std::size_t connections{};
 };
 using ReplayHandler = std::function<void(const Record&, const feed::FeedMessage&, const feed::FeedSession&)>;
-inline ReplayStats replay(RecordingReader& reader, feed::FeedSession& session, const ReplayHandler& handler = {}) {
+inline ReplayStats replay(RecordingReader& reader, feed::FeedSession& session, const ReplayHandler& handler = {}, const ReplayHandler& before = {}) {
   feed::CoinbaseParser parser{reader.instrument()};
   ReplayStats stats;
   session.reset();
   while (const auto record = reader.next()) {
+    const auto message = parser.parse(record->raw);
+    if (before) before(*record, message, session);
     if (record->new_connection) { session.reset(); ++stats.connections; }
     session.expire(record->received_ns);
-    const auto message = parser.parse(record->raw);
     const auto status = session.consume(message, record->received_ns);
     ++stats.records;
     if (status == feed::SessionResult::Gap) ++stats.gaps;

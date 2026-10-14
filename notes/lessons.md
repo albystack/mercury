@@ -116,3 +116,14 @@ benchmark measures varying book updates and normalized level2 parsing with a
 checksum to keep results observable. Use a Release build and compare identical
 workloads on the same machine. Timings include clock/sampling overhead; these
 are microbenchmarks, not exchange-to-strategy latency or profitability evidence.
+
+## 18A — integrated paper engine
+
+Replay runs scheduled actions before applying the next arrival. The paper
+engine reconciles desired quotes, preserves unchanged orders and queue
+priority, and waits for cancellation acknowledgment before replacement.
+Every fill updates account and risk once. Gaps/snapshots/reconnects invalidate
+simulated exposure. EOF ends the experiment without inventing liquidation
+trades; residual inventory remains marked. CLI experiments accept latency,
+maker fees, and order units. Golden tests cover deterministic PnL, fee and
+latency sensitivity, loss stops, feed gaps, and absence of lookahead.

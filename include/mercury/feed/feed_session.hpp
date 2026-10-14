@@ -52,6 +52,7 @@ public:
     }
     return false;
   }
+  [[nodiscard]] std::optional<std::uint64_t> last_sequence() const noexcept { return sequence_; }
   [[nodiscard]] bool synchronized() const noexcept { return synchronized_; }
   [[nodiscard]] bool ready() const {
     return synchronized_ && book_.best_bid().has_value() && book_.best_ask().has_value();
