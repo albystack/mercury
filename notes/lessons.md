@@ -63,3 +63,11 @@ sleeping and uses the same parser and feed session as the live application.
 Reconnect markers reset sequence and book state. Gaps invalidate the book and
 are counted. A synthetic recording provides repeatable offline experiments.
 Exchange time is metadata, not permission to reorder or look into the future.
+
+## 12 — order lifecycle
+
+OrderManager owns orders with unique IDs and validates state transitions.
+Remaining quantity is derived from original minus filled quantity. Pending
+new orders cannot fill; pending cancellation orders still can. Cancellation
+acknowledgment ends exposure, unless a full fill already ended it. Tests cover
+partial fills, cancellation races, rejection, overfills, and clock ordering.
