@@ -78,3 +78,16 @@ A min-priority queue runs actions by (deadline, submission sequence). Equal
 deadlines retain FIFO order. Time only advances forward; timestamp additions
 are checked for overflow. Configurable new-order and cancellation delays will
 control when simulated exposure begins and ends. No wall-clock sleeps are used.
+
+## 14 — queue-aware simulated execution
+
+Each price has one FIFO containing external liquidity and our simulated orders.
+A matching trade spends its volume once across that queue. Activation happens
+after new-order latency and samples the then-observed book; crossing orders
+are rejected as post-only. Fills remain possible until cancellation arrives.
+
+This is a conservative L2 approximation: no cancellation credit, no inferred
+trade-through fills, no hidden liquidity, and no market impact. New visible
+liquidity is reconciled when another order joins. Public L2 updates do not
+independently consume queue positions, avoiding trade/update double counting.
+Resynchronization invalidates all simulated resting and pending orders.
