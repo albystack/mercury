@@ -99,3 +99,12 @@ Midpoint and prices stay integral. Each inventory lot shifts both quotes by a
 tick, capped by a configurable skew. Prices are clamped to remain post-only;
 the risk-increasing side is suppressed at inventory limits. Empty, crossed,
 or unrepresentable books produce no quotes. Execution remains separate.
+
+## 16 — accounting and risk
+
+Inventory remains integral. Cash, fees, turnover, and marked equity use long
+double in quote-currency units for reporting. Risk reserves all nonterminal
+orders, including pending-new and pending-cancel quantities. Buy and sell
+exposure are checked separately rather than netted. Limits cover order size,
+notional, open count, worst-case inventory, and peak-to-trough equity loss.
+Loss and manual stops latch. Unsynchronized feeds cannot submit orders.
