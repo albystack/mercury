@@ -55,3 +55,11 @@ time, connection starts, product ID, and integer scales. Stream references
 allow the same recorder to write files or test buffers. Writers report I/O
 failures; readers validate schema and clock order with line-number diagnostics.
 mercury_record refuses to overwrite an existing file.
+
+## 11 — deterministic replay
+
+Arrival order is authoritative. Replay advances a virtual clock without
+sleeping and uses the same parser and feed session as the live application.
+Reconnect markers reset sequence and book state. Gaps invalidate the book and
+are counted. A synthetic recording provides repeatable offline experiments.
+Exchange time is metadata, not permission to reorder or look into the future.

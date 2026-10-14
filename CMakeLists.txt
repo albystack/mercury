@@ -118,6 +118,7 @@ add_executable(
   tests/book/order_book_test.cpp
   tests/market/events_test.cpp
   tests/market/market_data_processor_test.cpp
+  tests/data/replay_test.cpp
   tests/data/recording_test.cpp
   tests/feed/session_test.cpp
   tests/feed/parser_test.cpp
@@ -140,7 +141,6 @@ target_link_libraries(
   mercury_tests
   PRIVATE 
     GTest::gtest_main
-    mercury_feed
     nlohmann_json::nlohmann_json
 )
 
@@ -165,7 +165,7 @@ gtest_discover_tests(mercury_tests)
 
 function(mercury_app name source)
   add_executable(${name} ${source})
-  target_link_libraries(${name} PRIVATE mercury_feed)
+  target_link_libraries(${name} PRIVATE mercury_data)
   target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 endfunction()
 mercury_app(mercury_live apps/live_book.cpp)
@@ -175,5 +175,7 @@ target_include_directories(mercury_data PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(mercury_data PUBLIC mercury_feed PRIVATE nlohmann_json::nlohmann_json)
 target_compile_options(mercury_data PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 mercury_app(mercury_record apps/record_feed.cpp)
-target_link_libraries(mercury_record PRIVATE mercury_data)
 target_link_libraries(mercury_tests PRIVATE mercury_data)
+
+mercury_app(mercury_replay apps/replay_feed.cpp)
+target_compile_definitions(mercury_tests PRIVATE MERCURY_FIXTURE_DIR="${PROJECT_SOURCE_DIR}/tests/fixtures")
