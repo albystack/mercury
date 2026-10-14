@@ -39,3 +39,11 @@ connection attempt owns a fresh client. DNS resolution remains synchronous.
 
 Sources: [Coinbase schema](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/advanced-trade-asyncapi.json),
 [level2](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/websocket/level2).
+
+## 9F — live book application
+
+Callbacks separate connection ownership from message processing. mercury_live
+subscribes to level2, trades, and heartbeats; reconnects at most twice with
+exponential delays; and demands a fresh snapshot after connection reset.
+Network connection and read stages use asynchronous deadlines. The application
+prints normalized best prices only after the feed is synchronized.

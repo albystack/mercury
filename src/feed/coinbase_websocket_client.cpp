@@ -1,6 +1,7 @@
 #include <mercury/feed/coinbase_websocket_client.hpp>
 
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ssl/host_name_verification.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
 #include <boost/beast/core.hpp>
@@ -61,15 +62,33 @@ void CoinbaseWebSocketClient::connect()
     };
   }
 
-  const auto endpoints = resolver_.resolve(
-      std::string{kHost},
-      std::string{kPort});
-
-  boost::beast::get_lowest_layer(websocket_).connect(
-      endpoints);
-
-  websocket_.next_layer().handshake(
-      boost::asio::ssl::stream_base::client);
+  boost::system::error_code error;
+  bool finished = false;
+  boost::asio::ip::tcp::resolver::results_type endpoints;
+  boost::asio::steady_timer dns_deadline{io_context_, std::chrono::seconds{10}};
+  dns_deadline.async_wait([this](boost::system::error_code ec) { if (!ec) resolver_.cancel(); });
+  finished = false;
+  io_context_.restart();
+  resolver_.async_resolve(std::string{kHost}, std::string{kPort},
+    [&](boost::system::error_code ec, boost::asio::ip::tcp::resolver::results_type resolved) {
+      error = ec; endpoints = std::move(resolved); dns_deadline.cancel(); finished = true;
+    });
+  while (!finished) io_context_.run_one();
+  if (error) throw boost::system::system_error{error};
+  finished = false;
+  io_context_.restart();
+  boost::beast::get_lowest_layer(websocket_).expires_after(std::chrono::seconds{10});
+  boost::beast::get_lowest_layer(websocket_).async_connect(endpoints,
+    [&](boost::system::error_code ec, const boost::asio::ip::tcp::endpoint&) { error = ec; finished = true; });
+  while (!finished) io_context_.run_one();
+  if (error) throw boost::system::system_error{error};
+  finished = false;
+  io_context_.restart();
+  boost::beast::get_lowest_layer(websocket_).expires_after(std::chrono::seconds{10});
+  websocket_.next_layer().async_handshake(boost::asio::ssl::stream_base::client,
+    [&](boost::system::error_code ec) { error = ec; finished = true; });
+  while (!finished) io_context_.run_one();
+  if (error) throw boost::system::system_error{error};
 
   boost::beast::get_lowest_layer(websocket_).expires_never();
   auto timeout = boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::client);
@@ -78,9 +97,12 @@ void CoinbaseWebSocketClient::connect()
   timeout.keep_alive_pings = true;
   websocket_.set_option(timeout);
   websocket_.read_message_max(32 * 1024 * 1024);
-  websocket_.handshake(
-      std::string{kHost},
-      std::string{kPath});
+  finished = false;
+  io_context_.restart();
+  websocket_.async_handshake(std::string{kHost}, std::string{kPath},
+      [&](boost::system::error_code ec) { error = ec; finished = true; });
+  while (!finished) io_context_.run_one();
+  if (error) throw boost::system::system_error{error};
 
   connected_ = true;
 }
@@ -116,9 +138,11 @@ std::string CoinbaseWebSocketClient::read_message()
   boost::beast::flat_buffer buffer;
 
   boost::system::error_code error;
+  bool finished = false;
+  finished = false;
   io_context_.restart();
-  websocket_.async_read(buffer, [&](boost::system::error_code ec, std::size_t) { error = ec; });
-  io_context_.run();
+  websocket_.async_read(buffer, [&](boost::system::error_code ec, std::size_t) { error = ec; finished = true; });
+  while (!finished) io_context_.run_one();
   if (error) { connected_ = false; throw boost::system::system_error{error}; }
 
   return boost::beast::buffers_to_string(
@@ -133,10 +157,12 @@ void CoinbaseWebSocketClient::close()
   }
 
   boost::system::error_code error;
+  bool finished = false;
+  finished = false;
   io_context_.restart();
   websocket_.async_close(boost::beast::websocket::close_code::normal,
-                        [&](boost::system::error_code ec) { error = ec; });
-  io_context_.run();
+                        [&](boost::system::error_code ec) { error = ec; finished = true; });
+  while (!finished) io_context_.run_one();
   connected_ = false;
   if (error) throw boost::system::system_error{error};
 }

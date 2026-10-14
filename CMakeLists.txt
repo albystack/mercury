@@ -161,3 +161,10 @@ include(GoogleTest)
 
 # Discover each TEST(...) automatically and register it with CTest
 gtest_discover_tests(mercury_tests)
+
+function(mercury_app name source)
+  add_executable(${name} ${source})
+  target_link_libraries(${name} PRIVATE mercury_feed)
+  target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+endfunction()
+mercury_app(mercury_live apps/live_book.cpp)
