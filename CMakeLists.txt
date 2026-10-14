@@ -118,6 +118,7 @@ add_executable(
   tests/book/order_book_test.cpp
   tests/market/events_test.cpp
   tests/market/market_data_processor_test.cpp
+  tests/feed/session_test.cpp
   tests/feed/parser_test.cpp
 )
 

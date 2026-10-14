@@ -27,3 +27,15 @@ Coinbase's trade side describes the maker, so Mercury inverts it for its
 aggressor-side enum. IDs and snapshot/update kind survive normalization.
 Historical snapshots will be excluded from simulated fills. Subscriptions are
 serialized as JSON, including heartbeats and market trades.
+
+## 9E — synchronization and recovery
+
+A FeedSession checks the per-connection sequence across all channels, ignores
+old envelopes, and clears the book on gaps, disconnects, or stale arrival time.
+A new snapshot is mandatory after reset. Historical/duplicate trades cannot
+generate fills. The transport uses asynchronous reads internally to enforce
+Beast idle deadlines while exposing a simple blocking interface. Each
+connection attempt owns a fresh client. DNS resolution remains synchronous.
+
+Sources: [Coinbase schema](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/advanced-trade-asyncapi.json),
+[level2](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/websocket/level2).

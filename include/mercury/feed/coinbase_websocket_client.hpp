@@ -41,6 +41,7 @@ private:
   WebSocket websocket_;
 
   bool connected_{false};
+  bool attempted_{false};
 };
 
 } // namespace mercury::feed

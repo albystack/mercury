@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 
 #include <stdexcept>
+#include <chrono>
 #include <string>
 
 namespace mercury::feed {
@@ -44,12 +45,14 @@ CoinbaseWebSocketClient::CoinbaseWebSocketClient()
 
 void CoinbaseWebSocketClient::connect()
 {
-  if (connected_) {
+  if (attempted_) {
     throw std::logic_error{
-        "Coinbase WebSocket client is already connected"
+        "Create a fresh client for each connection attempt"
     };
   }
 
+  attempted_ = true;
+  boost::beast::get_lowest_layer(websocket_).expires_after(std::chrono::seconds{10});
   if (!SSL_set_tlsext_host_name(
           websocket_.next_layer().native_handle(),
           kHost.data())) {
@@ -68,6 +71,13 @@ void CoinbaseWebSocketClient::connect()
   websocket_.next_layer().handshake(
       boost::asio::ssl::stream_base::client);
 
+  boost::beast::get_lowest_layer(websocket_).expires_never();
+  auto timeout = boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::client);
+  timeout.handshake_timeout = std::chrono::seconds{10};
+  timeout.idle_timeout = std::chrono::seconds{10};
+  timeout.keep_alive_pings = true;
+  websocket_.set_option(timeout);
+  websocket_.read_message_max(32 * 1024 * 1024);
   websocket_.handshake(
       std::string{kHost},
       std::string{kPath});
@@ -105,7 +115,11 @@ std::string CoinbaseWebSocketClient::read_message()
 
   boost::beast::flat_buffer buffer;
 
-  websocket_.read(buffer);
+  boost::system::error_code error;
+  io_context_.restart();
+  websocket_.async_read(buffer, [&](boost::system::error_code ec, std::size_t) { error = ec; });
+  io_context_.run();
+  if (error) { connected_ = false; throw boost::system::system_error{error}; }
 
   return boost::beast::buffers_to_string(
       buffer.data());
@@ -118,10 +132,13 @@ void CoinbaseWebSocketClient::close()
     return;
   }
 
-  websocket_.close(
-      boost::beast::websocket::close_code::normal);
-
+  boost::system::error_code error;
+  io_context_.restart();
+  websocket_.async_close(boost::beast::websocket::close_code::normal,
+                        [&](boost::system::error_code ec) { error = ec; });
+  io_context_.run();
   connected_ = false;
+  if (error) throw boost::system::system_error{error};
 }
 
 } // namespace mercury::feed
