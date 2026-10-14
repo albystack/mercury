@@ -91,3 +91,11 @@ trade-through fills, no hidden liquidity, and no market impact. New visible
 liquidity is reconciled when another order joins. Public L2 updates do not
 independently consume queue positions, avoiding trade/update double counting.
 Resynchronization invalidates all simulated resting and pending orders.
+
+## 15 — inventory-aware quote policy
+
+A pure function returns desired quotes from observed book and inventory.
+Midpoint and prices stay integral. Each inventory lot shifts both quotes by a
+tick, capped by a configurable skew. Prices are clamped to remain post-only;
+the risk-increasing side is suppressed at inventory limits. Empty, crossed,
+or unrepresentable books produce no quotes. Execution remains separate.
