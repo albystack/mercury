@@ -13,11 +13,20 @@ struct BookBatch {
   bool snapshot;
   std::vector<market::BookUpdate> updates;
 };
+struct ParsedTrade {
+  std::string trade_id;
+  market::Trade trade;
+};
+struct TradeBatch {
+  bool snapshot;
+  std::vector<ParsedTrade> trades;
+};
 struct FeedMessage {
   std::string channel;
   std::uint64_t sequence;
   market::Timestamp timestamp;
   std::vector<BookBatch> books;
+  std::vector<TradeBatch> trades;
 };
 class CoinbaseParser {
 public:

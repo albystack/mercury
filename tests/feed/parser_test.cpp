@@ -57,3 +57,19 @@ TEST(CoinbaseParser, RejectsMalformedMessagesBeforeReturningAnyBatch) {
   j = book_message(); j["events"][0]["updates"] = nullptr;
   EXPECT_THROW((void)feed::CoinbaseParser{}.parse(j.dump()), std::invalid_argument);
 }
+
+TEST(CoinbaseParser, InvertsMakerSideAndPreservesTradeIdentityAndSnapshot) {
+  const auto text = R"({"channel":"market_trades","sequence_num":1,"timestamp":"2026-10-14T12:00:00Z","events":[{"type":"snapshot","trades":[{"trade_id":"abc","product_id":"BTC-USD","price":"100.00","size":"0.1","side":"BUY","time":"2026-10-14T12:00:00Z"},{"trade_id":"def","product_id":"BTC-USD","price":"100.01","size":"0.2","side":"SELL","time":"2026-10-14T12:00:00Z"}]}]})";
+  auto j = nlohmann::json::parse(text);
+  const auto parsed = feed::CoinbaseParser{}.parse(text);
+  ASSERT_EQ(parsed.trades.size(), 1U);
+  EXPECT_TRUE(parsed.trades[0].snapshot);
+  ASSERT_EQ(parsed.trades[0].trades.size(), 2U);
+  EXPECT_EQ(parsed.trades[0].trades[0].trade_id, "abc");
+  EXPECT_EQ(parsed.trades[0].trades[0].trade.aggressor_side, market::AggressorSide::Sell);
+  EXPECT_EQ(parsed.trades[0].trades[1].trade.aggressor_side, market::AggressorSide::Buy);
+  j["events"][0]["trades"][0]["size"] = "0";
+  EXPECT_THROW((void)feed::CoinbaseParser{}.parse(j.dump()), std::invalid_argument);
+  j["events"][0]["trades"][0]["product_id"] = "ETH-USD";
+  EXPECT_EQ(feed::CoinbaseParser{}.parse(j.dump()).trades[0].trades.size(), 1U);
+}

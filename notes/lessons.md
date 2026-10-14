@@ -20,3 +20,10 @@ entire message is validated before any batch is returned.
 The parser owns its result; it has no network or order-book side effects.
 Tests cover precision, overflow, calendar validity, product filtering, malformed
 input, side mapping, and zero-quantity deletion.
+
+## 9D — public trade normalization
+
+Coinbase's trade side describes the maker, so Mercury inverts it for its
+aggressor-side enum. IDs and snapshot/update kind survive normalization.
+Historical snapshots will be excluded from simulated fills. Subscriptions are
+serialized as JSON, including heartbeats and market trades.

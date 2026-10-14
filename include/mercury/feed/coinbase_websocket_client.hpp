@@ -22,6 +22,8 @@ public:
   void connect();
 
   void subscribe_level2(std::string_view product_id);
+  void subscribe_market_trades(std::string_view product_id);
+  void subscribe_heartbeats();
 
   [[nodiscard]]
   std::string read_message();
@@ -29,6 +31,7 @@ public:
   void close();
 
 private:
+  void subscribe(std::string_view channel, std::string_view product_id);
   using WebSocket = boost::beast::websocket::stream<
       boost::beast::ssl_stream<boost::beast::tcp_stream>>;
 

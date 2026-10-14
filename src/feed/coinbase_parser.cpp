@@ -25,7 +25,28 @@ FeedMessage CoinbaseParser::parse(std::string_view text) const {
     const auto& sequence = root.at("sequence_num");
     if (!sequence.is_number_unsigned()) throw std::invalid_argument{"Invalid sequence number"};
     FeedMessage result{string_field(root, "channel"), sequence.get<std::uint64_t>(),
-                       utc_nanoseconds(string_field(root, "timestamp")), {}};
+                       utc_nanoseconds(string_field(root, "timestamp")), {}, {}};
+    if (result.channel == "market_trades") {
+      for (const auto& event : array_field(root, "events")) {
+        const auto type = string_field(event, "type");
+        if (type != "snapshot" && type != "update") throw std::invalid_argument{"Unknown trade event"};
+        TradeBatch batch{type == "snapshot", {}};
+        for (const auto& trade : array_field(event, "trades")) {
+          if (string_field(trade, "product_id") != instrument_.product_id) continue;
+          const auto maker_side = string_field(trade, "side");
+          if (maker_side != "BUY" && maker_side != "SELL") throw std::invalid_argument{"Invalid trade side"};
+          const auto price = decimal_units(string_field(trade, "price"), instrument_.price_decimals);
+          const auto quantity = decimal_units(string_field(trade, "size"), instrument_.quantity_decimals);
+          const auto id = string_field(trade, "trade_id");
+          if (price <= 0 || quantity <= 0 || id.empty()) throw std::invalid_argument{"Invalid trade"};
+          batch.trades.push_back({id, {utc_nanoseconds(string_field(trade, "time")),
+              maker_side == "BUY" ? market::AggressorSide::Sell : market::AggressorSide::Buy,
+              market::Price{price}, quantity}});
+        }
+        result.trades.push_back(std::move(batch));
+      }
+      return result;
+    }
     if (result.channel != "l2_data") return result;
     for (const auto& event : array_field(root, "events")) {
       if (string_field(event, "product_id") != instrument_.product_id) continue;

@@ -6,6 +6,7 @@
 #include <boost/beast/core.hpp>
 
 #include <openssl/ssl.h>
+#include <nlohmann/json.hpp>
 
 #include <stdexcept>
 #include <string>
@@ -75,24 +76,24 @@ void CoinbaseWebSocketClient::connect()
 }
 
 
-void CoinbaseWebSocketClient::subscribe_level2(
-    std::string_view product_id)
-{
-  if (!connected_) {
-    throw std::logic_error{
-        "Cannot subscribe before connecting"
-    };
-  }
-
-  const std::string subscription =
-      R"({"type":"subscribe","channel":"level2","product_ids":[")"
-      + std::string{product_id}
-      + R"("]})";
-
-  websocket_.write(
-      boost::asio::buffer(subscription));
+void CoinbaseWebSocketClient::subscribe_level2(std::string_view product_id) {
+  subscribe("level2", product_id);
 }
-
+void CoinbaseWebSocketClient::subscribe_market_trades(std::string_view product_id) {
+  subscribe("market_trades", product_id);
+}
+void CoinbaseWebSocketClient::subscribe_heartbeats() {
+  subscribe("heartbeats", {});
+}
+void CoinbaseWebSocketClient::subscribe(std::string_view channel, std::string_view product_id) {
+  if (!connected_) throw std::logic_error{"Cannot subscribe before connecting"};
+  if (channel != "heartbeats" && product_id.empty()) throw std::invalid_argument{"Empty product ID"};
+  nlohmann::json products = nlohmann::json::array();
+  if (!product_id.empty()) products.push_back(product_id);
+  const auto subscription = nlohmann::json{{"type", "subscribe"}, {"channel", channel},
+                                          {"product_ids", products}}.dump();
+  websocket_.write(boost::asio::buffer(subscription));
+}
 
 std::string CoinbaseWebSocketClient::read_message()
 {
