@@ -139,7 +139,6 @@ std::string CoinbaseWebSocketClient::read_message()
 
   boost::system::error_code error;
   bool finished = false;
-  finished = false;
   io_context_.restart();
   websocket_.async_read(buffer, [&](boost::system::error_code ec, std::size_t) { error = ec; finished = true; });
   while (!finished) io_context_.run_one();
@@ -158,7 +157,6 @@ void CoinbaseWebSocketClient::close()
 
   boost::system::error_code error;
   bool finished = false;
-  finished = false;
   io_context_.restart();
   websocket_.async_close(boost::beast::websocket::close_code::normal,
                         [&](boost::system::error_code ec) { error = ec; finished = true; });

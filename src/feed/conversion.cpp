@@ -2,6 +2,7 @@
 #include <chrono>
 #include <limits>
 #include <stdexcept>
+#include <string>
 namespace mercury::feed {
 std::int64_t decimal_units(std::string_view text, unsigned decimals) {
   if (text.empty() || decimals > 9) throw std::invalid_argument{"Invalid decimal scale or value"};

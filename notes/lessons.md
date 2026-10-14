@@ -136,3 +136,26 @@ its mapped event time. This fixed-offset model does not estimate changing clock
 skew or network jitter. Already cancelled queues are not reconstructed for
 late reports, a conservative source of missed fills. The fixture uses realistic
 progressing event timestamps, and a regression test protects activation timing.
+
+## 18C — reproducible builds and verification
+
+An INTERFACE CMake target shares include paths, warnings, and optional
+AddressSanitizer/UndefinedBehaviorSanitizer flags. Applications and unit tests
+are registered explicitly; offline CLI checks are also in CTest. GitHub CI
+runs Release and sanitizer builds, plus a repeated-output determinism check.
+README documents commands, units, experiment parameters, and model assumptions.
+An integration regression verifies replacements wait for cancellation and the
+manual kill switch stays latched.
+
+### Final verification — 14 October 2026
+
+- Debug, Release, and AddressSanitizer/UndefinedBehaviorSanitizer builds: 72 checks passed each.
+- All 20 public headers compiled independently.
+- Synthetic replay: three fills, flat ending inventory, repeatable output.
+- Fee and latency scenarios: fees reduce equity; delayed activation misses fills.
+- Live capture: 60 messages, 41,908 normalized book updates, 10 live trades, no sequence gaps.
+- Recorded live data replayed and backtested successfully; no simulated fills in that short sample.
+- Release book-update and parser benchmark completed.
+
+Lessons 1–18 are complete for the agreed paper-research outline. The ledger
+records individual concepts; Git history retains each verified implementation step.

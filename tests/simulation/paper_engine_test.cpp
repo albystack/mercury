@@ -64,3 +64,30 @@ TEST(PaperEngine, GapRemovesSimulatedExposureAndCannotFillFromStaleBook) {
   for (const auto& [id, order] : engine.exchange().orders().orders()) { (void)id; EXPECT_TRUE(order.terminal()); }
   EXPECT_EQ(engine.account().fill_count(), 0U);
 }
+
+TEST(PaperEngine, RepricingWaitsForCancellationAndKeepsExposureBounded) {
+  feed::FeedSession session; simulation::PaperConfig config;
+  config.latency = {10, 10};
+  simulation::PaperEngine engine{session, {}, config};
+  feed::FeedMessage message{"l2_data", 0, 1, {{true, {{1, market::Side::Bid, market::Price{10000}, 100000},
+                                                  {1, market::Side::Ask, market::Price{10002}, 100000}}}}, {}};
+  const auto process = [&](market::Timestamp now) {
+    data::Record record{now, now == 1, "x"}; engine.before(record, message, session);
+    session.consume(message, now); engine.observe(record, session);
+  };
+  process(1); message.sequence = 1; message.books.clear(); message.channel = "heartbeats"; process(12);
+  message.sequence = 2; message.channel = "l2_data";
+  message.books = {{false, {{1, market::Side::Bid, market::Price{10000}, 0},
+                           {1, market::Side::Ask, market::Price{10002}, 0},
+                           {1, market::Side::Bid, market::Price{10001}, 100000},
+                           {1, market::Side::Ask, market::Price{10003}, 100000}}}};
+  process(13); EXPECT_EQ(engine.submitted(), 2U); EXPECT_EQ(engine.cancellations(), 2U);
+  message.sequence = 3; message.books.clear(); message.channel = "heartbeats"; process(14);
+  EXPECT_EQ(engine.submitted(), 2U);
+  message.sequence = 4; process(23); EXPECT_EQ(engine.submitted(), 4U);
+  std::size_t open = 0;
+  for (const auto& [id, order] : engine.exchange().orders().orders()) { (void)id; if (!order.terminal()) ++open; }
+  EXPECT_EQ(open, 2U);
+  engine.kill(24); EXPECT_TRUE(engine.risk_manager().halted());
+  message.sequence = 5; process(40); EXPECT_EQ(engine.submitted(), 4U);
+}

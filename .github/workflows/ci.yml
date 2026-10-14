@@ -1,0 +1,33 @@
+name: Mercury checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - build_type: Release
+            sanitizers: 'OFF'
+          - build_type: Debug
+            sanitizers: 'ON'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install C++ dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libboost-system-dev libssl-dev
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DMERCURY_ENABLE_SANITIZERS=${{ matrix.sanitizers }}
+      - name: Build
+        run: cmake --build build -j 2
+      - name: Test
+        env:
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: ctest --test-dir build --output-on-failure
+      - name: Verify deterministic experiment
+        run: |
+          ./build/mercury_backtest tests/fixtures/sample.jsonl > build/first.txt
+          ./build/mercury_backtest tests/fixtures/sample.jsonl > build/second.txt
+          diff build/first.txt build/second.txt
