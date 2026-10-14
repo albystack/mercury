@@ -71,3 +71,10 @@ Remaining quantity is derived from original minus filled quantity. Pending
 new orders cannot fill; pending cancellation orders still can. Cancellation
 acknowledgment ends exposure, unless a full fill already ended it. Tests cover
 partial fills, cancellation races, rejection, overfills, and clock ordering.
+
+## 13 — virtual latency
+
+A min-priority queue runs actions by (deadline, submission sequence). Equal
+deadlines retain FIFO order. Time only advances forward; timestamp additions
+are checked for overflow. Configurable new-order and cancellation delays will
+control when simulated exposure begins and ends. No wall-clock sleeps are used.
