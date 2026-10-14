@@ -118,6 +118,7 @@ add_executable(
   tests/book/order_book_test.cpp
   tests/market/events_test.cpp
   tests/market/market_data_processor_test.cpp
+  tests/metrics/latency_test.cpp
   tests/risk/risk_test.cpp
   tests/strategy/quotes_test.cpp
   tests/simulation/exchange_test.cpp
@@ -184,3 +185,5 @@ target_link_libraries(mercury_tests PRIVATE mercury_data)
 
 mercury_app(mercury_replay apps/replay_feed.cpp)
 target_compile_definitions(mercury_tests PRIVATE MERCURY_FIXTURE_DIR="${PROJECT_SOURCE_DIR}/tests/fixtures")
+
+mercury_app(mercury_benchmark apps/benchmark.cpp)

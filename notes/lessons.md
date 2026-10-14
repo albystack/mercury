@@ -108,3 +108,11 @@ orders, including pending-new and pending-cancel quantities. Buy and sell
 exposure are checked separately rather than netted. Limits cover order size,
 notional, open count, worst-case inventory, and peak-to-trough equity loss.
 Loss and manual stops latch. Unsynchronized feeds cannot submit orders.
+
+## 17 — latency measurement
+
+LatencySamples reports nearest-rank median/p95/p99, extrema, and mean. The
+benchmark measures varying book updates and normalized level2 parsing with a
+checksum to keep results observable. Use a Release build and compare identical
+workloads on the same machine. Timings include clock/sampling overhead; these
+are microbenchmarks, not exchange-to-strategy latency or profitability evidence.
