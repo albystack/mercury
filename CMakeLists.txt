@@ -118,6 +118,7 @@ add_executable(
   tests/book/order_book_test.cpp
   tests/market/events_test.cpp
   tests/market/market_data_processor_test.cpp
+  tests/data/recording_test.cpp
   tests/feed/session_test.cpp
   tests/feed/parser_test.cpp
 )
@@ -168,3 +169,11 @@ function(mercury_app name source)
   target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 endfunction()
 mercury_app(mercury_live apps/live_book.cpp)
+
+add_library(mercury_data src/data/recording.cpp)
+target_include_directories(mercury_data PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(mercury_data PUBLIC mercury_feed PRIVATE nlohmann_json::nlohmann_json)
+target_compile_options(mercury_data PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+mercury_app(mercury_record apps/record_feed.cpp)
+target_link_libraries(mercury_record PRIVATE mercury_data)
+target_link_libraries(mercury_tests PRIVATE mercury_data)

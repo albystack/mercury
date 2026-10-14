@@ -47,3 +47,11 @@ subscribes to level2, trades, and heartbeats; reconnects at most twice with
 exponential delays; and demands a fresh snapshot after connection reset.
 Network connection and read stages use asynchronous deadlines. The application
 prints normalized best prices only after the feed is synchronized.
+
+## 10 — recording
+
+Versioned JSONL records retain the raw exchange message, monotonic arrival
+time, connection starts, product ID, and integer scales. Stream references
+allow the same recorder to write files or test buffers. Writers report I/O
+failures; readers validate schema and clock order with line-number diagnostics.
+mercury_record refuses to overwrite an existing file.
