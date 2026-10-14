@@ -7,7 +7,7 @@ project(
     LANGUAGES CXX
 )
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost CONFIG REQUIRED COMPONENTS system)
 find_package(OpenSSL REQUIRED)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -44,11 +44,26 @@ target_compile_options(
         -Wshadow
 )
 
-add_executable(
-  mercury_feed_smoke
-  apps/feed_smoke.cpp
-  src/feed/coinbase_websocket_client.cpp
+include(FetchContent)
+FetchContent_Declare(nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.12.0
+  GIT_SHALLOW TRUE
 )
+FetchContent_MakeAvailable(nlohmann_json)
+
+add_library(mercury_feed
+  src/feed/coinbase_websocket_client.cpp
+  src/feed/conversion.cpp
+  src/feed/coinbase_parser.cpp
+)
+target_include_directories(mercury_feed PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(mercury_feed PUBLIC Boost::system OpenSSL::SSL OpenSSL::Crypto
+  PRIVATE nlohmann_json::nlohmann_json)
+target_compile_options(mercury_feed PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
+
+add_executable(mercury_feed_smoke apps/feed_smoke.cpp)
+target_link_libraries(mercury_feed_smoke PRIVATE mercury_feed)
 
 target_include_directories(
   mercury_feed_smoke
@@ -103,6 +118,7 @@ add_executable(
   tests/book/order_book_test.cpp
   tests/market/events_test.cpp
   tests/market/market_data_processor_test.cpp
+  tests/feed/parser_test.cpp
 )
 
 # Our tests need access to Mercury's public headers 
@@ -122,6 +138,8 @@ target_link_libraries(
   mercury_tests
   PRIVATE 
     GTest::gtest_main
+    mercury_feed
+    nlohmann_json::nlohmann_json
 )
 
 # Give test code the same strict warning settings as main app 
